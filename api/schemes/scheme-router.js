@@ -55,6 +55,8 @@ router.get('/', (req, res, next) => {
 router.get('/:scheme_id', checkSchemeId, (req, res, next) => {
   let { scheme_id } = req.params
 
+  scheme_id = parseInt(scheme_id)
+
   Schemes.findById(scheme_id)
     .then(scheme => {
       res.json(scheme)
