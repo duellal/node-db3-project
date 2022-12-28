@@ -1,3 +1,5 @@
+const db = require(`../../data/db-config`)
+
 async function find() { // EXERCISE A
   /*
     1A- Study the SQL query below running it in SQLite Studio against `data/schemes.db3`.
@@ -20,8 +22,14 @@ async function find() { // EXERCISE A
       The left joing gives you 7 rows where the inner join only gives you 6. The inner join omits scheme_id 7 b/c it does not have any steps (steps = 0)
 */
     //2A:
+  const schemes = await db(`schemes as sc`)
+    .leftJoin(`steps as st`, `sc.scheme_id`, `st.scheme_id`)
+    .count(`st.step_id as number_of_steps`)
+    .groupBy(`sc.scheme_id`)
+    .orderBy(`sc.scheme_id`)
+    .select(`sc.*`, `st.step_id`)
 
-    
+    return schemes
 }
 
 async function findById(scheme_id) { // EXERCISE B
@@ -39,6 +47,17 @@ async function findById(scheme_id) { // EXERCISE B
 
     2B- When you have a grasp on the query go ahead and build it in Knex
     making it parametric: instead of a literal `1` you should use `scheme_id`.
+*/
+ //2B:
+  // const schemeById = await db('schemes as sc')
+  //   .leftJoin(`steps as st`, `sc.scheme_id`, `st.scheme_id`)
+  //   .where(`sc.scheme_id`, scheme_id)
+  //   .orderBy(`st.step_number`)
+  //   .select(`sc.scheme_name`, `st.*`)
+
+  //   return schemeById
+
+/*
 
     3B- Test in Postman and see that the resulting data does not look like a scheme,
     but more like an array of steps each including scheme information:
@@ -60,6 +79,9 @@ async function findById(scheme_id) { // EXERCISE B
         },
         // etc
       ]
+
+      // 3B: Did it on httpie and can confirm it looks like the above and not the below code.
+
 
     4B- Using the array obtained and vanilla JavaScript, create an object with
     the structure below, for the case _when steps exist_ for a given `scheme_id`:
@@ -90,6 +112,24 @@ async function findById(scheme_id) { // EXERCISE B
         "steps": []
       }
   */
+
+    //4B + 5B:
+    const dbSchemeById = await db('schemes as sc')
+    .leftJoin(`steps as st`, `sc.scheme_id`, `st.scheme_id`)
+    .where(`sc.scheme_id`, scheme_id)
+    .orderBy(`st.step_number`)
+    .select(`sc.scheme_name`, `st.*`)
+
+    const schemeById = dbSchemeById.reduce((acc, row) => {
+      if(row.instructions){
+        acc.steps.push({step_id: row.step_id, step_number: row.step_number, instructions: row.instructions})
+      }
+      
+      return acc
+      
+    }, {scheme_id: scheme_id, scheme_name: dbSchemeById[0].scheme_name, steps: []})
+
+    return schemeById
 }
 
 async function findSteps(scheme_id) { // EXERCISE C
@@ -112,13 +152,41 @@ async function findSteps(scheme_id) { // EXERCISE C
           "scheme_name": "Get Rich Quick"
         }
       ]
+
+    //My Notes from SQLite Studio:
+      select
+          st.step_id,
+          st.step_number,
+          st.instructions,
+          sc.scheme_name
+      from steps as st
+      join schemes as sc
+          on st.scheme_id = sc.scheme_id
+      where st.scheme_id = 1
   */
+
+      //1C:
+      const steps = await db('steps as st')
+        .join(`schemes as sc`, `st.scheme_id`, `sc.scheme_id`)
+        .select(`st.step_id`, `st.step_number`, `st.instructions`, `sc.scheme_name`)
+        .where(`st.scheme_id`, scheme_id)
+        .orderBy(`st.step_number`)
+
+        return steps
 }
 
-async function add(scheme) { // EXERCISE D
+function add(scheme) { // EXERCISE D
   /*
     1D- This function creates a new scheme and resolves to _the newly created scheme_.
   */
+
+    //1D:
+    return db('schemes')
+      .insert(scheme)
+      .then(id => {
+        return db(`schemes`).where(`scheme_id`, id)
+      })
+
 }
 
 async function addStep(scheme_id, step) { // EXERCISE E
@@ -127,6 +195,12 @@ async function addStep(scheme_id, step) { // EXERCISE E
     and resolves to _all the steps_ belonging to the given `scheme_id`,
     including the newly created one.
   */
+
+    //1E:
+    return db(`steps`)
+      .insert({scheme_id, step_number: step.step_number, instructions: step.instructions})
+      .then(() => findById(scheme_id))
+
 }
 
 module.exports = {
