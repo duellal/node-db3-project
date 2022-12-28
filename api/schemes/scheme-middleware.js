@@ -6,8 +6,16 @@
     "message": "scheme with scheme_id <actual id> not found"
   }
 */
-const checkSchemeId = (req, res, next) => {
+const checkSchemeId = async (req, res, next) => {
+  const id = await db('schemes').where('scheme_id', req.params.id)
 
+  if(!id){
+    next({
+      status: 404, 
+      message: `scheme with scheme_id ${req.params.id} not found`
+    })
+  }
+  next()
 }
 
 /*
@@ -18,8 +26,16 @@ const checkSchemeId = (req, res, next) => {
     "message": "invalid scheme_name"
   }
 */
-const validateScheme = (req, res, next) => {
+const validateScheme = async (req, res, next) => {
+  const schemeName = await db('schemes').where('scheme_name', req.body.scheme)
 
+  if(!schemeName){
+    next({
+      status: 400,
+      message: `invalid scheme_name`
+    })
+  }
+  next()
 }
 
 /*
@@ -32,7 +48,15 @@ const validateScheme = (req, res, next) => {
   }
 */
 const validateStep = (req, res, next) => {
+  const {instructions, step_number} = req.body
 
+  if(!instructions || step_number <= 1 || typeof step_number !== 'number'){
+    next({
+      status: 400, 
+      message: `invalid step`
+    })
+  }
+  next()
 }
 
 module.exports = {
