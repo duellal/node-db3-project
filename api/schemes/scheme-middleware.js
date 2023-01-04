@@ -29,8 +29,6 @@ const checkSchemeId = async (req, res, next) => {
 */
 const validateScheme = (req, res, next) => {
   const {scheme_name} = req.body 
-  console.log(`Middleware Scheme Name:`, scheme_name)
-  console.log(`Middleware Scheme Name type of:`, typeof scheme_name)
 
   if(!scheme_name || typeof scheme_name !== 'string'){
     next({
@@ -53,7 +51,7 @@ const validateScheme = (req, res, next) => {
 const validateStep = (req, res, next) => {
   const {instructions, step_number} = req.body
 
-  if(!instructions || step_number < 1 || typeof step_number !== 'number'){
+  if(!instructions || step_number < 1 || typeof step_number !== 'number' || typeof instructions !== 'string' || instructions.length < 0){
     next({
       status: 400, 
       message: `invalid step`
